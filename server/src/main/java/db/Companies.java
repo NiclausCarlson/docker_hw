@@ -6,7 +6,6 @@ import com.mongodb.client.MongoClients;
 import logic.UpdatePrices;
 import model.Company;
 import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
 import java.util.ArrayList;
@@ -22,8 +21,8 @@ public class Companies {
         this.client = MongoClients.create("mongodb://localhost:27017");
     }
 
-    public ObjectId registerCompany(String name) {
-        var company = new Company(name);
+    public ObjectId registerCompany(String name, Double price) {
+        var company = new Company(name, price);
         var insertResult = client.getDatabase(database)
                 .getCollection(collection)
                 .insertOne(company.asDocument());
@@ -64,7 +63,7 @@ public class Companies {
         return result;
     }
 
-    public void addActions(ObjectId companyId, int count) {
+    public void changeStockCount(ObjectId companyId, int count) {
         getCompany(companyId);
         var update = new Document().append("$inc", count);
         var res = client.getDatabase(database)
@@ -91,4 +90,6 @@ public class Companies {
             );
         }
     }
+
+
 }

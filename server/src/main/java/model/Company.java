@@ -33,10 +33,10 @@ public class Company {
     private String name;
     private Stock stock;
 
-    public Company(String name) {
+    public Company(String name, Double price_per_unite) {
         this.id = new ObjectId();
         this.name = name;
-        this.stock = new Stock();
+        this.stock = new Stock(0, price_per_unite);
     }
 
     public Company(Document document) {
