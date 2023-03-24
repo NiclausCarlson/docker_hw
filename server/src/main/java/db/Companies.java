@@ -3,11 +3,14 @@ package db;
 import com.mongodb.BasicDBObject;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
+import logic.UpdatePrices;
 import model.Company;
 import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.bson.types.ObjectId;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class Companies {
@@ -30,7 +33,12 @@ public class Companies {
         throw new RuntimeException("Can't register company with this name");
     }
 
+    // Возвращает информацию о компании и её акциях
     public Company getCompany(ObjectId id) {
+        if (UpdatePrices.check()) {
+            updatePrices();
+        }
+
         var res = client.getDatabase(database)
                 .getCollection(collection)
                 .find(new BasicDBObject("_id", id)).first();
@@ -38,6 +46,22 @@ public class Companies {
             throw new RuntimeException("Can't find company with this id");
         }
         return new Company(res);
+    }
+
+    // Возвращает информацию о всех компаниях
+    public List<Company> getCompanies() {
+        if (UpdatePrices.check()) {
+            updatePrices();
+        }
+
+        var res = client.getDatabase(database)
+                .getCollection(collection)
+                .find();
+        var result = new ArrayList<Company>();
+        for (var doc : res) {
+            result.add(new Company(doc));
+        }
+        return result;
     }
 
     public void addActions(ObjectId companyId, int count) {
