@@ -47,4 +47,14 @@ public class Users {
             throw new RuntimeException("Can't update users amount");
         }
     }
+
+    public void updateUser(User user){
+        var id = new BasicDBObject("_id", user.getId());
+        var res = client.getDatabase(database)
+                .getCollection(collection)
+                .updateOne(id, user.asDocument());
+        if(!res.wasAcknowledged()){
+            throw new RuntimeException("Can't update user data");
+        }
+    }
 }

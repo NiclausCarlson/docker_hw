@@ -21,7 +21,6 @@ public class User {
         this.stocks = new HashMap<>();
     }
 
-
     public User(Document doc) {
         this.id = doc.getObjectId("_id");
         this.name = doc.getString("name");
@@ -40,7 +39,9 @@ public class User {
     public double getAmount() {
         return amount;
     }
-
+    public void addAmount(double amount){
+        this.amount += amount;
+    }
     public Map<ObjectId, Integer> getStocks() {
         return stocks;
     }

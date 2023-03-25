@@ -9,6 +9,13 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+
 @Controller
 public class Controllers {
     final Users users;
@@ -80,11 +87,32 @@ public class Controllers {
     // на основании этой информации пользователь решает сколько он будет покупать.
     // Далее происходит запрос в биржу с числом акций и ценой, за которую пользователь согласен произвести покупку
     // Если не получилось(на бирже нет столько акций или цена изменилась), то цикл повторяется
-    public String buyStocks(@RequestParam(name = "userId") String userId,
-                            @RequestParam(name = "companyId") String companyId,
-                            @RequestParam(name = "count") Integer count,
-                            @RequestParam(name = "price_per_unite") Double price_per_unite) {
-        return "";
+    public ResponseEntity<String> buyStocks(@RequestParam(name = "userId") String userId,
+                                            @RequestParam(name = "companyId") String companyId,
+                                            @RequestParam(name = "count") Integer count,
+                                            @RequestParam(name = "price_per_unite") Double price_per_unite) {
+        try {
+            var userObjectId = new ObjectId(userId);
+            var user = users.getUser(userObjectId);
+            String req = "http://localhost:8080/burse/buy?" + "companyId=" + companyId + "&" +
+                    "price_per_unite=" + price_per_unite + "&" +
+                    "count=" + count;
+
+            HttpRequest request = HttpRequest.newBuilder().uri(new URI(req)).GET().build();
+
+            var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == HttpStatus.OK.value()) {
+                var stocks = user.getStocks();
+                var cId = new ObjectId(companyId);
+                stocks.put(cId, stocks.getOrDefault(cId, 0) + count);
+                users.updateUser(user);
+            }
+            return ResponseEntity.status(HttpStatus.valueOf(response.statusCode()))
+                    .body(response.body());
+        } catch (final URISyntaxException | IOException | InterruptedException | RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ex.getMessage());
+        }
     }
 
     @RequestMapping(value = "/users/sell-stocks", method = RequestMethod.GET)
@@ -92,11 +120,47 @@ public class Controllers {
     // Пользователь пытается продать count акций за price_per_unite.
     // Если цена изменилась, то продать не получится(например, если цена уменьшилась, то
     // пользователь будет недоволен).
-    public String sellStocks(@RequestParam(name = "userId") String userId,
-                             @RequestParam(name = "companyId") String companyId,
-                             @RequestParam(name = "count") Integer count,
-                             @RequestParam(name = "price_per_unite") Double price_per_unite) {
-        return "";
+    public ResponseEntity<String> sellStocks(@RequestParam(name = "userId") String userId,
+                                             @RequestParam(name = "companyId") String companyId,
+                                             @RequestParam(name = "count") Integer count,
+                                             @RequestParam(name = "price_per_unite") Double price_per_unite) {
+        if (count <= 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid count");
+        }
+        try {
+            var userObjectId = new ObjectId(userId);
+            var companyObjectId = new ObjectId(companyId);
+            var user = users.getUser(userObjectId);
+            var stocks = user.getStocks();
+            var stocksCount = stocks.getOrDefault(companyObjectId, 0);
+            if (stocksCount < count) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("You don't have enough stocks");
+            }
+            stocksCount -= count;
+            String req = "http://localhost:8080/burse/sell?" + "companyId=" + companyId + "&" +
+                    "price_per_unite=" + price_per_unite + "&" +
+                    "count=" + count;
+
+            HttpRequest request = HttpRequest.newBuilder().uri(new URI(req)).GET().build();
+
+            var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == HttpStatus.OK.value()) {
+                if (stocksCount == 0) {
+                    stocks.remove(companyObjectId);
+                } else {
+                    stocks.put(companyObjectId, stocksCount);
+                }
+                user.addAmount(count * price_per_unite);
+                users.updateUser(user);
+            }
+            return ResponseEntity.status(HttpStatus.valueOf(response.statusCode()))
+                    .body(response.body());
+        } catch (final URISyntaxException | IOException | InterruptedException | RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ex.getMessage());
+        }
     }
 
 }

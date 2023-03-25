@@ -82,4 +82,28 @@ public class Controllers {
         return ResponseEntity.status(HttpStatus.OK).body("Success");
     }
 
+    @RequestMapping(value = "/burse/sell", method = RequestMethod.GET)
+    @ResponseBody
+    // Продаём count акций компании companyId за price_per_unite за штуку
+    public ResponseEntity<String> sell(@RequestParam(name = "companyId") String companyId,
+                                       @RequestParam(name = "price_per_unite") Double price_per_unite,
+                                       @RequestParam(name = "count") Integer count){
+        if (count <= 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Invalid count");
+        }
+        try {
+            var id = new ObjectId(companyId);
+            var stocks = companies.getCompany(id).getStock();
+            if (stocks.getPricePerUnite() != price_per_unite) {
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body("Price or free stocks count were changed");
+            }
+            companies.changeStockCount(id, count);
+        } catch (final RuntimeException err) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(err.getMessage());
+        }
+        return ResponseEntity.status(HttpStatus.OK).body("Success");
+    }
 }
