@@ -1,8 +1,7 @@
 package controller;
 
-import db.Companies;
+import db.InMemoryCompanies;
 import model.Company;
-import org.bson.types.ObjectId;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -12,13 +11,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.List;
+import java.util.UUID;
 
 @Controller
 public class Controllers {
-    final Companies companies;
+    final InMemoryCompanies companies;
 
     public Controllers() {
-        this.companies = new Companies();
+        this.companies = new InMemoryCompanies();
     }
 
     @RequestMapping(value = "/burse/add-company", method = RequestMethod.GET)
@@ -41,7 +41,7 @@ public class Controllers {
                     .body("Invalid count");
         }
         try {
-            companies.changeStockCount(new ObjectId(companyId), count);
+            companies.changeStockCount(UUID.fromString(companyId), count);
         } catch (final RuntimeException err) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(err.getMessage());
@@ -68,7 +68,7 @@ public class Controllers {
                     .body("Invalid count");
         }
         try {
-            var id = new ObjectId(companyId);
+            var id = UUID.fromString(companyId);
             var stocks = companies.getCompany(id).getStock();
             if (stocks.getPricePerUnite() != price_per_unite || stocks.getCount() < count) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)
@@ -93,7 +93,7 @@ public class Controllers {
                     .body("Invalid count");
         }
         try {
-            var id = new ObjectId(companyId);
+            var id =  UUID.fromString(companyId);
             var stocks = companies.getCompany(id).getStock();
             if (stocks.getPricePerUnite() != price_per_unite) {
                 return ResponseEntity.status(HttpStatus.CONFLICT)

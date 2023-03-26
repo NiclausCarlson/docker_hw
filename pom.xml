@@ -18,4 +18,9 @@
         <java.version>17</java.version>
     </properties>
 
+    <modules>
+        <module>Client</module>
+        <module>server</module>
+    </modules>
+
 </project>

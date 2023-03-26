@@ -1,34 +1,23 @@
 package model;
 
-import com.mongodb.BasicDBObject;
-import org.bson.Document;
-import org.bson.types.ObjectId;
-
-import javax.print.Doc;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 public class User {
-    private ObjectId id;
+    private UUID id;
     private String name;
     private double amount;
-    private Map<ObjectId, Integer> stocks;
+    private Map<UUID, Integer> stocks;
 
     public User(String name) {
-        this.id = new ObjectId();
+        this.id = UUID.randomUUID();
         this.name = name;
         this.amount = 0;
         this.stocks = new HashMap<>();
     }
 
-    public User(Document doc) {
-        this.id = doc.getObjectId("_id");
-        this.name = doc.getString("name");
-        this.amount = doc.getDouble("amount");
-        this.stocks = (Map<ObjectId, Integer>) doc.get("stocks");
-    }
-
-    public ObjectId getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -39,17 +28,13 @@ public class User {
     public double getAmount() {
         return amount;
     }
-    public void addAmount(double amount){
+
+    public void addAmount(double amount) {
         this.amount += amount;
     }
-    public Map<ObjectId, Integer> getStocks() {
+
+    public Map<UUID, Integer> getStocks() {
         return stocks;
     }
 
-    public Document asDocument() {
-        return new Document("_id", this.id)
-                .append("name", this.name)
-                .append("amount", this.amount)
-                .append("stocks", new BasicDBObject(this.stocks));
-    }
 }

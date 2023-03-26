@@ -1,7 +1,6 @@
 package controller;
 
-import db.Users;
-import org.bson.types.ObjectId;
+import db.InMemoryUsers;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -15,13 +14,14 @@ import java.net.URISyntaxException;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.UUID;
 
 @Controller
 public class Controllers {
-    final Users users;
+    final InMemoryUsers users;
 
     public Controllers() {
-        this.users = new Users();
+        this.users = new InMemoryUsers();
     }
 
     @RequestMapping(value = "/users/add-user", method = RequestMethod.GET)
@@ -36,7 +36,7 @@ public class Controllers {
     // Добавляем пользователю userId amount денег
     public ResponseEntity<String> addAmount(@RequestParam(name = "userId") String userId, @RequestParam(name = "amount") Integer amount) {
         try {
-            users.addAmount(new ObjectId(userId), amount);
+            users.addAmount(UUID.fromString(userId), amount);
         } catch (final RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ex.getMessage());
@@ -49,7 +49,7 @@ public class Controllers {
     // Смотрим акции пользователя
     public ResponseEntity<String> checkStocks(@RequestParam(name = "userId") String userId) {
         try {
-            var user = users.getUser(new ObjectId(userId));
+            var user = users.getUser(UUID.fromString(userId));
             StringBuilder result = new StringBuilder();
             for (var stock : user.getStocks().entrySet()) {
                 result.append("CompanyId: ")
@@ -68,7 +68,7 @@ public class Controllers {
     @RequestMapping(value = "/users/how-much-money", method = RequestMethod.GET)
     public ResponseEntity<String> howMuchMoney(@RequestParam(name = "userId") String userId) {
         try {
-            var user = users.getUser(new ObjectId(userId));
+            var user = users.getUser(UUID.fromString(userId));
             Double result = 0.;
             for (var stock : user.getStocks().entrySet()) {
                 result += stock.getValue();
@@ -92,7 +92,7 @@ public class Controllers {
                                             @RequestParam(name = "count") Integer count,
                                             @RequestParam(name = "price_per_unite") Double price_per_unite) {
         try {
-            var userObjectId = new ObjectId(userId);
+            var userObjectId = UUID.fromString(userId);
             var user = users.getUser(userObjectId);
             String req = "http://localhost:8080/burse/buy?" + "companyId=" + companyId + "&" +
                     "price_per_unite=" + price_per_unite + "&" +
@@ -103,7 +103,7 @@ public class Controllers {
             var response = HttpClient.newHttpClient().send(request, HttpResponse.BodyHandlers.ofString());
             if (response.statusCode() == HttpStatus.OK.value()) {
                 var stocks = user.getStocks();
-                var cId = new ObjectId(companyId);
+                var cId = UUID.fromString(companyId);
                 stocks.put(cId, stocks.getOrDefault(cId, 0) + count);
                 users.updateUser(user);
             }
@@ -129,8 +129,8 @@ public class Controllers {
                     .body("Invalid count");
         }
         try {
-            var userObjectId = new ObjectId(userId);
-            var companyObjectId = new ObjectId(companyId);
+            var userObjectId = UUID.fromString(userId);
+            var companyObjectId = UUID.fromString(companyId);
             var user = users.getUser(userObjectId);
             var stocks = user.getStocks();
             var stocksCount = stocks.getOrDefault(companyObjectId, 0);

@@ -1,8 +1,6 @@
 package model;
 
-
-import org.bson.types.ObjectId;
-import org.bson.Document;
+import java.util.UUID;
 
 public class Company {
 
@@ -27,25 +25,27 @@ public class Company {
         public int getCount() {
             return count;
         }
+
+        public void updateCount(int value) {
+            this.count += value;
+        }
+
+        public void updatePrice(double value) {
+            this.pricePerUnite += value;
+        }
     }
 
-    private ObjectId id;
+    private UUID id;
     private String name;
     private Stock stock;
 
     public Company(String name, Double price_per_unite) {
-        this.id = new ObjectId();
+        this.id = UUID.randomUUID();
         this.name = name;
         this.stock = new Stock(0, price_per_unite);
     }
 
-    public Company(Document document) {
-        this.id = document.getObjectId("_id");
-        this.name = document.getString("name");
-        this.stock = new Stock(document.getInteger("count"), document.getDouble("pricePerUnite"));
-    }
-
-    public ObjectId getId() {
+    public UUID getId() {
         return id;
     }
 
@@ -57,10 +57,4 @@ public class Company {
         return name;
     }
 
-    public Document asDocument() {
-        return new Document("_id", this.id)
-                .append("name", this.name)
-                .append("count", this.stock.getCount())
-                .append("pricePerUnite", this.stock.getPricePerUnite());
-    }
 }
